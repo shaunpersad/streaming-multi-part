@@ -1,14 +1,14 @@
-export interface ReadablePart {
+export type ReadablePart = {
   name: string,
-  body: ReadableStream,
+  body: ReadableStream<Uint8Array>,
   attrs: Record<string, string>,
   contentDisposition: string,
   contentType?: string,
-}
+};
 
-export interface WritablePart extends ReadablePart {
-  body: ReadableStream | string,
+export type WritablePart = ReadablePart & {
+  body: ReadableStream<Uint8Array> | string,
   attrs?: Record<string, string>,
   contentDisposition?: string,
   contentType?: string,
-}
+};

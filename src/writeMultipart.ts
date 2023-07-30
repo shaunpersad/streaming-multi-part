@@ -1,5 +1,5 @@
 import { Header, headerToStr, strToHeader } from './headers';
-import { ReadablePart, WritablePart } from './types';
+import { ReadablePart, WritablePart } from './parts';
 
 export type WriteMultipartOptions = {
   boundary?: string,

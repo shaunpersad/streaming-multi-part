@@ -7,15 +7,20 @@
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-import-resolver-typescript": "^3.5.5",
     "eslint-plugin-import": "^2.28.0",
+    "miniflare": "^3.20230724.0",
     "typescript": "^5.1.6",
-    "undefined": "^0.1.0"
+    "vitest": "^0.33.0",
+    "vitest-environment-miniflare": "^2.14.0"
   },
   "name": "streaming-multi-part",
   "description": "Multi-part form data codec for streaming individual parts",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest"
   },
   "author": "",
   "license": "ISC"

@@ -70,8 +70,11 @@ export default {
                         )
                     }
                 }
+                if (part.name === 'image') { // exclude all other parts
+                    return part;
+                }
             },
-            flush: (written) => { / and array of part names that were already written
+            flush: (written) => { // an array of part names that were already written
                 if (!written.includes('caption')) {
                     return [{
                         name: 'caption',

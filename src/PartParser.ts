@@ -1,5 +1,5 @@
 import { Header, strToHeader } from './headers';
-import { ReadablePart } from './types';
+import { ReadablePart } from './parts';
 
 enum State {
   Uninitialized,
@@ -22,6 +22,8 @@ export function parseHeaderStr(str: string): { name: string, header: Header } {
   };
 }
 
+export type OnNewPart = (part: ReadablePart, writable: WritableStream<Uint8Array>) => void;
+
 export default class PartParser {
   protected state = State.Uninitialized;
 
@@ -31,35 +33,44 @@ export default class PartParser {
 
   protected headerBuffer: number[] = [];
 
-  protected currentWriter: WritableStreamDefaultWriter<number> | null = null;
+  protected onNewPart: OnNewPart;
 
-  async parse(byte: number, controller: TransformStreamDefaultController<ReadablePart>) {
-    const { state, lastByte, headerBuffer, headers } = this;
+  constructor(onNewPart: OnNewPart) {
+    this.onNewPart = onNewPart;
+  }
+
+  parse(byte: number): boolean {
+    const { state, lastByte, headers, onNewPart } = this;
     switch (state) {
       case State.Uninitialized:
         if (lastByte === newLine[0] && byte === newLine[1]) { // start
+          console.log('new line found');
           this.state = State.ParsingHeader;
         } else if (lastByte === end[0] && byte === end[1]) { // end of multipart
+          console.log('end of multipart');
           this.state = State.MultipartEnd;
         } else if (lastByte !== null) {
+          console.log('invalid');
           throw new Error('Invalid start to part.');
         }
         break;
       case State.ParsingHeader:
         if (lastByte === newLine[0] && byte === newLine[1]) { // end of a header
-          if (headerBuffer.length) {
-            headerBuffer.pop();
-            headers.push(new TextDecoder().decode(new Uint8Array(headerBuffer)));
+          console.log('header end');
+          if (this.headerBuffer.length > 1) {
+            this.headerBuffer.pop();
+            headers.push(new TextDecoder().decode(new Uint8Array(this.headerBuffer)));
             this.headerBuffer = [];
+            console.log(headers);
           } else {
-            const stream = new TransformStream();
+            console.log('got part');
+            const stream = new TransformStream<Uint8Array, any>();
             const part: ReadablePart = {
               name: '',
               body: stream.readable,
               attrs: {},
               contentDisposition: '',
             };
-            this.currentWriter = stream.writable.getWriter();
             this.state = State.ParsingBody;
             for (const str of headers) {
               const { name, header } = parseHeaderStr(str);
@@ -76,29 +87,18 @@ export default class PartParser {
                   break;
               }
             }
-            controller.enqueue(part);
+            onNewPart(part, stream.writable);
           }
         } else {
-          headerBuffer.push(byte);
+          this.headerBuffer.push(byte);
         }
         break;
       case State.ParsingBody:
-        if (this.currentWriter) {
-          await this.currentWriter.ready;
-          await this.currentWriter.write(byte);
-        } else {
-          throw new Error('Invalid state reached');
-        }
-        break;
+        return true;
       default:
         break;
     }
     this.lastByte = byte;
-  }
-
-  async close() {
-    if (this.currentWriter) {
-      await this.currentWriter.close();
-    }
+    return false;
   }
 }

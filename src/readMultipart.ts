@@ -1,6 +1,6 @@
+import { strToHeader } from './headers';
 import partTransformer from './partTransformer';
-import strToHeader from './strToHeader';
-import { ReadablePart } from './types';
+import { ReadablePart } from './parts';
 
 export type ReadableMultipart = {
   boundary: string,
