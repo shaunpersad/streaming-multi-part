@@ -42,16 +42,16 @@ Convert a request body into a stream of parts, where each part contains a sub-st
 import { decodeRequest } from 'streaming-multi-part';
 
 export default {
-    async fetch(request) {
-        const decode = decodeRequest(request);
-        for await (const part of decode.stream) { // we've decoded the request body into a stream of parts
-            console.log(`${part.name} body:`);
-            for await (const chunk of part.body) { // each part's body is also a sub-stream of their portion of the parent stream's data
-                console.log(new TextDecoder().decode(part.body));
-            }
-        }
-        return new Response();
+  async fetch(request) {
+    const decode = decodeRequest(request);
+    for await (const part of decode.stream) { // we've decoded the request body into a stream of parts
+      console.log(`${part.name} body:`);
+      for await (const chunk of part.body) { // each part's body is also a sub-stream of their portion of the parent stream's data
+        console.log(new TextDecoder().decode(part.body));
+      }
     }
+    return new Response();
+  }
 }
 ```
 
@@ -60,23 +60,23 @@ The sub-stream for each part must be consumed in order for the parent stream to 
 import { decodeRequest, filterMultipart } from 'streaming-multi-part';
 
 export default {
-    async fetch(request) {
-        const decode = decodeRequest(request);
-        const filter = filterMultipart((part) => part.name === 'image'); // return true for the parts you're interested in
-        for await (const part of decode.stream.pipeThrough(filter.stream)) { // send the parts through the filter
-            // this will only fire for the image part, thanks to our filter
-            const fileName = part.attrs.filename;
-            const response = await fetch(`https://example.com/images/${fileName}`, {
-                method: 'post',
-                body: part.body, // stream the body directly from the incoming request to the outgoing sub-request
-                headers: {
-                    'content-type': part.contentType,
-                },
-            });
-            return response;
-        }
-        return new Response();
+  async fetch(request) {
+    const decode = decodeRequest(request);
+    const filter = filterMultipart((part) => part.name === 'image'); // return true for the parts you're interested in
+    for await (const part of decode.stream.pipeThrough(filter.stream)) { // send the parts through the filter
+      // this will only fire for the image part, thanks to our filter
+      const fileName = part.attrs.filename;
+      const response = await fetch(`https://example.com/images/${fileName}`, {
+        method: 'post',
+        body: part.body, // stream the body directly from the incoming request to the outgoing sub-request
+        headers: {
+          'content-type': part.contentType,
+        },
+      });
+      return response;
     }
+    return new Response();
+  }
 }
 ```
 
@@ -85,27 +85,28 @@ You can also create your own multipart bodies:
 import { encodeMultipart } from 'streaming-multi-part';
 
 export default {
-    async fetch(request) {
-        const encode = encodeMultipart();
-        const writer = encode.stream.writable.getWriter();
-        const response = await fetch('https://example.com/images/cat.jpg');
-        await writer.ready;
-        writer.write({ 
-            name: 'image', 
-            body: response.body, // stream the body directly from the sub-request
-            attrs: { filename: 'cat.jpg' },
-            contentType: 'image/jpeg',
-        });
-        writer.write({ 
-            name: 'caption', 
-            body: 'this is a cat' // also accept strings
-        });
-        return new Response(encode.stream.readable, {
-            headers: {
-                'content-type': encode.contentType, // an appropriate content-type header with the boundary is provided for you
-            }
-        });
-    }
+  async fetch(request) {
+    const encode = encodeMultipart();
+    const writer = encode.stream.writable.getWriter();
+    const response = await fetch('https://example.com/images/cat.jpg');
+    await writer.ready;
+    writer.write({ 
+      name: 'image', 
+      body: response.body, // stream the body directly from the sub-request
+      attrs: { filename: 'cat.jpg' },
+      contentType: 'image/jpeg',
+    });
+    writer.write({ 
+      name: 'caption', 
+      body: 'this is a cat' // also accept strings
+    });
+    writer.close();
+    return new Response(encode.stream.readable, { // stream directly to the response
+      headers: {
+        'content-type': encode.contentType, // an appropriate content-type header with the boundary is provided for you
+      }
+    });
+  }
 }
 ```
 Combine streams to proxy data efficiently. This example has an incoming multipart request, strips out all parts except the image and (optional) caption, lowercases the caption, appends a default caption if one wasn't provided, then streams it all to an outgoing multipart sub-request. All of this takes place without loading any part bodies fully in memory:
@@ -113,47 +114,47 @@ Combine streams to proxy data efficiently. This example has an incoming multipar
 import { decodeRequest, filterMultipart, changeMultipart, appendMultipart, encodeMultipart } from 'streaming-multi-part';
 
 export default {
-    async fetch(request) {
-        const decode = decodeRequest(request); // convert request body to stream of parts
-        const filter = filterMultipart((part) => ['image', 'caption'].includes(part.name)); // we're only interested in the image and caption
-        const change = changeMultipart((part) => { // lowercase the caption
-            if (part.name === 'caption') {
-                return {
-                    ...part,
-                    body: part.body
-                        .pipeThrough(new TextDecoderStream())
-                        .pipeThrough(new TransformStream({
-                            transform(chunk, controller) {
-                                controller.enqueue(chunk.toLowerCase());
-                            },
-                        }))
-                        .pipeThrough(new TextEncoderStream()),
-                };
-            }
-            return part;
-        })
-        const append = appendMultipart((written) => {  // append a default caption if one wasn't provided
-            const parts = [];
-           if (!written.includes('caption')) {
-               parts.push({
-                   name: 'caption',
-                   body: 'this is the default caption',
-               });
-           }
-           return parts;
+  async fetch(request) {
+    const decode = decodeRequest(request); // convert request body to stream of parts
+    const filter = filterMultipart((part) => ['image', 'caption'].includes(part.name)); // we're only interested in the image and caption
+    const change = changeMultipart((part) => { // lowercase the caption
+      if (part.name === 'caption') {
+        return {
+          ...part,
+          body: part.body
+            .pipeThrough(new TextDecoderStream())
+            .pipeThrough(new TransformStream({
+              transform(chunk, controller) {
+                controller.enqueue(chunk.toLowerCase());
+              },
+            }))
+            .pipeThrough(new TextEncoderStream()),
+        };
+      }
+      return part;
+    })
+    const append = appendMultipart((written) => {  // append a default caption if one wasn't provided
+      const parts = [];
+      if (!written.includes('caption')) {
+        parts.push({
+          name: 'caption',
+          body: 'this is the default caption',
         });
-        const encode = encodeMultipart(); // covert parts into a data stream
-        const response = await fetch('https://example.com/images/cat.jpg', {
-            headers: {
-                'content-type': encode.contentType,
-            },
-            body: decode.stream // chain all the streams together and send the data directly to the sub-request
-                .pipeThrough(filter.stream)
-                .pipeThrough(change.stream)
-                .pipeThrough(append.stream)
-                .pipeThrough(encode.stream),
-        });
-        return response;
-    }
+      }
+      return parts;
+    });
+    const encode = encodeMultipart(); // covert parts into a data stream
+    const response = await fetch('https://example.com/images/cat.jpg', {
+      headers: {
+        'content-type': encode.contentType,
+      },
+      body: decode.stream // chain all the streams together and send the data directly to the sub-request
+        .pipeThrough(filter.stream)
+        .pipeThrough(change.stream)
+        .pipeThrough(append.stream)
+        .pipeThrough(encode.stream),
+    });
+    return response;
+  }
 }
 ```
