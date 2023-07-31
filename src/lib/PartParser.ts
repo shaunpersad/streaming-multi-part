@@ -44,26 +44,20 @@ export default class PartParser {
     switch (state) {
       case State.Uninitialized:
         if (lastByte === newLine[0] && byte === newLine[1]) { // start
-          console.log('new line found');
           this.state = State.ParsingHeader;
         } else if (lastByte === end[0] && byte === end[1]) { // end of multipart
-          console.log('end of multipart');
           this.state = State.MultipartEnd;
         } else if (lastByte !== null) {
-          console.log('invalid');
           throw new Error('Invalid start to part.');
         }
         break;
       case State.ParsingHeader:
         if (lastByte === newLine[0] && byte === newLine[1]) { // end of a header
-          console.log('header end');
           if (this.headerBuffer.length > 1) {
             this.headerBuffer.pop();
             headers.push(new TextDecoder().decode(new Uint8Array(this.headerBuffer)));
             this.headerBuffer = [];
-            console.log(headers);
           } else {
-            console.log('got part');
             const stream = new TransformStream<Uint8Array, any>();
             const part: ReadablePart = {
               name: '',

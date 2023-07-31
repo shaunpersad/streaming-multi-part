@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import { describe, it } from 'vitest';
-import readMultipart from './readMultipart';
+import decodeMultipart from './decodeMultipart';
 
 const text = `
 --MyBoundary
@@ -30,10 +30,9 @@ describe('readMultipart', () => {
     });
     const writer = stream.writable.getWriter();
     await writer.ready;
-    console.log('one');
     writer.write(text).then(() => writer.close());
-    const readableMultipart = readMultipart(request);
-    for await (const part of readableMultipart.output) {
+    const readableMultipart = decodeMultipart(request);
+    for await (const part of readableMultipart.readable) {
       console.log('part is:', part);
       // await part.body.cancel();
       for await (const chunk of part.body) {

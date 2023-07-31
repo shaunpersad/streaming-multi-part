@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import { describe, it } from 'vitest';
-import { readMultipart } from '../src/index';
+import { decodeMultipart } from '../src/index';
 
 describe('readMultipart', () => {
   it('does typical stuff', async () => {
