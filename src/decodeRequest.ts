@@ -1,7 +1,13 @@
 import decodeMultipart from './decodeMultipart';
 import { strToHeader } from './lib/headers';
+import { ReadablePart } from './lib/parts';
 
-export default function decodeRequest(request: Request) {
+export type DecodedRequest = {
+  boundary: string,
+  stream: ReadableStream<ReadablePart>,
+};
+
+export default function decodeRequest(request: Request): DecodedRequest {
   const contentType = strToHeader(request.headers.get('content-type') || '');
   const { boundary } = contentType.attrs;
   if (!boundary) {

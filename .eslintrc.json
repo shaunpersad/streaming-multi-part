@@ -10,7 +10,7 @@
     "airbnb-typescript/base"
   ],
   "parserOptions": {
-    "project": "./tsconfig.test.json"
+    "project": "./test/tsconfig.json"
   },
   "ignorePatterns": ["*.js"],
   "rules": {

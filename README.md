@@ -24,7 +24,7 @@ The following functions are available:
 
 - `decodeRequest(request: Request): { stream: ReadableStream<ReadablePart> }`
   - Decode a request body into a stream of parts.
-- `decodeMultipart(boundary: string): { stream: TransformStream<UInt8Array, ReadablePart> }`
+- `decodeMultipart(boundary: string): { stream: TransformStream<ArrayBufferView, ReadablePart> }`
   - If you don't have a request, you can "manually" pipe in your raw multipart data to the writable side of this stream.
 - `filterMultipart(filter: (part: ReadablePart) => boolean | Promise<boolean>): { stream: TransformStream<ReadablePart, ReadablePart> }`
   - Every part's sub-stream must eventually be consumed in order for the parent stream to make progress, so use this to filter out irrelevant parts. Return `true` to keep the part in the stream.
@@ -35,11 +35,15 @@ The following functions are available:
 - `encodeMultipart(customBoundary?: string): { stream: TransformStream<WritablePart, Uint8Array>, contentType: string, boundary: string }`
   - Encode the given parts into a data stream. Also produces a `content-type` header that already includes the boundary used.
 
+There are also a few helper functions:
+- `streamToString(stream: ReadableStream<ArrayBufferView>): Promise<string>`
+  - Converts a stream to a string
+
 ## Examples
 
 Convert a request body into a stream of parts, where each part contains a sub-stream of their portion of the parent stream's data.
 ```javascript
-import { decodeRequest } from 'streaming-multi-part';
+import { decodeRequest, streamToString } from 'streaming-multi-part';
 
 export default {
   async fetch(request) {
@@ -49,6 +53,8 @@ export default {
       for await (const chunk of part.body) { // each part's body is also a sub-stream of their portion of the parent stream's data
         console.log(new TextDecoder().decode(part.body));
       }
+      // you could've similarly accomplished the above like this:
+      // console.log(await streamToString(part.body));
     }
     return new Response();
   }

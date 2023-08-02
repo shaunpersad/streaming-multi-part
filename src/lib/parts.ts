@@ -8,11 +8,12 @@ export type ReadablePart = {
   contentType?: string,
 };
 
-export type WritablePart = ReadablePart & {
-  body: ReadableStream<Uint8Array> | string,
-  attrs?: Record<string, string>,
-  contentDisposition?: string,
-  contentType?: string,
+export type WritablePart = {
+  name: ReadablePart['name'],
+  body: ReadablePart['body'] | string,
+  attrs?: ReadablePart['attrs'],
+  contentDisposition?: ReadablePart['contentDisposition'],
+  contentType?: ReadablePart['contentType'],
 };
 
 export function contentDispositionForPart({ contentDisposition, name, attrs }: WritablePart): Header {

@@ -1,4 +1,4 @@
-import { Header, strToHeader } from './headers';
+import { Header, headerToStr, strToHeader } from './headers';
 import { ReadablePart } from './parts';
 
 enum State {
@@ -72,10 +72,10 @@ export default class PartParser {
                 case 'content-disposition':
                   part.name = header.attrs.name;
                   part.attrs = header.attrs;
-                  part.contentDisposition = str;
+                  part.contentDisposition = headerToStr(header);
                   break;
                 case 'content-type':
-                  part.contentType = str;
+                  part.contentType = headerToStr(header);
                   break;
                 default:
                   break;

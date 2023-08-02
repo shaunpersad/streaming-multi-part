@@ -28,5 +28,5 @@ export function headerToStr(header: Header): string {
       ([key, val]) => `${key}=${JSON.stringify(val)}`,
     )
     .join('; ');
-  return `${header.value}; ${attrsStr}`;
+  return [header.value.trim(), attrsStr.trim()].filter((str) => str.length).join('; ');
 }
