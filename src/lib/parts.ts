@@ -24,7 +24,12 @@ export function contentDispositionForPart({ contentDisposition, name, attrs }: W
   if (!header.value) {
     header.value = 'form-data';
   }
-  header.attrs = { ...attrs, name };
+  header.attrs = Object.entries({ ...attrs, name }).reduce((a, [key, val]) => {
+    if (val) {
+      return { ...a, [key]: val.toString() };
+    }
+    return a;
+  }, {} as Record<string, string>);
   return header;
 }
 

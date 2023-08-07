@@ -1,4 +1,4 @@
-import { Header, headerToStr, strToHeader } from './headers';
+import { headerToStr, parseHeaderStr } from './headers';
 import { ReadablePart } from './parts';
 
 enum State {
@@ -10,17 +10,6 @@ enum State {
 
 const newLine = new TextEncoder().encode('\r\n');
 const end = new TextEncoder().encode('--');
-
-export function parseHeaderStr(str: string): { name: string, header: Header } {
-  const [name, content] = str.split(':');
-  if (!name || !content) {
-    throw new Error(`Invalid header: ${str}`);
-  }
-  return {
-    name: name.trim().toLowerCase(),
-    header: strToHeader(content),
-  };
-}
 
 export type OnNewPart = (part: ReadablePart, writable: WritableStream<Uint8Array>) => void;
 
@@ -63,14 +52,20 @@ export default class PartParser {
               name: '',
               body: stream.readable,
               attrs: {},
-              contentDisposition: '',
+              contentDisposition: 'form-data',
             };
             this.state = State.ParsingBody;
             for (const str of headers) {
               const { name, header } = parseHeaderStr(str);
               switch (name) {
                 case 'content-disposition':
-                  part.name = header.attrs.name;
+                  // if (!header.attrs.name) {
+                  //   header.attrs.name = '';
+                  // }
+                  if (!header.value) {
+                    header.value = 'form-data';
+                  }
+                  part.name = header.attrs.name || '';
                   part.attrs = header.attrs;
                   part.contentDisposition = headerToStr(header);
                   break;

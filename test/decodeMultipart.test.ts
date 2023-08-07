@@ -11,10 +11,10 @@ Content-Disposition: form-data; name="foo-j"
 `.replaceAll('\n', '\r\n');
 
 describe('decodeMultipart', () => {
-  it('does typical stuff', async () => {
+  it('decodes typical multipart data', async () => {
     const boundary = 'MyBoundary';
-    const readableMultipart = decodeMultipart(boundary);
-    const stream = stringToStream(typicalInput).pipeThrough(readableMultipart.stream);
+    const decode = decodeMultipart(boundary);
+    const stream = stringToStream(typicalInput).pipeThrough(decode.stream);
     let index = 0;
     for await (const part of stream) {
       // console.log(part);

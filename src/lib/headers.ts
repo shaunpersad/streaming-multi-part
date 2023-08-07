@@ -15,7 +15,10 @@ export function strToHeader(str: string): Header {
         try {
           normalizedValue = JSON.parse(normalizedValue);
         } catch (e) { /* empty */ }
-        return { ...a, [normalizedKey]: normalizedValue };
+        if (normalizedValue) {
+          return { ...a, [normalizedKey]: normalizedValue };
+        }
+        return a;
       },
       {} as Record<string, string>,
     ),
@@ -29,4 +32,15 @@ export function headerToStr(header: Header): string {
     )
     .join('; ');
   return [header.value.trim(), attrsStr.trim()].filter((str) => str.length).join('; ');
+}
+
+export function parseHeaderStr(str: string): { name: string, header: Header } {
+  const [name, content] = str.split(':');
+  if (!name || !content) {
+    throw new Error(`Invalid header: ${str}`);
+  }
+  return {
+    name: name.trim().toLowerCase(),
+    header: strToHeader(content),
+  };
 }

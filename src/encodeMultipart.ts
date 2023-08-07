@@ -21,12 +21,12 @@ export default function encodeMultipart(customBoundary?: string): EncodedMultipa
       if (part.contentType) {
         controller.enqueue(new TextEncoder().encode(`\r\nContent-Type: ${part.contentType}`));
       }
-      controller.enqueue(new TextEncoder().encode('\r\n'));
+      controller.enqueue(new TextEncoder().encode('\r\n\r\n'));
       for await (const chunk of part.body) {
         controller.enqueue(chunk);
       }
     },
-    async flush(controller) {
+    flush(controller) {
       controller.enqueue(delimiter);
       controller.enqueue(new TextEncoder().encode('--'));
     },

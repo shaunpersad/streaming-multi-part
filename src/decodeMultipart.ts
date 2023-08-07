@@ -33,10 +33,6 @@ export default function decodeMultipart(boundary: string): DecodedMultipart {
       let byteIndex = 0;
       while (byteIndex < chunk.length) {
         const byte = chunk[byteIndex];
-        // console.log({
-        //   delimiterChar: new TextDecoder().decode(new Uint8Array([delimiter[delimiterIndex]])),
-        //   chunkChar: new TextDecoder().decode(new Uint8Array([byte])),
-        // });
 
         if (delimiter[delimiterIndex] === byte) { // search for the delimiter
           delimiterIndex++;
@@ -87,9 +83,10 @@ export default function decodeMultipart(boundary: string): DecodedMultipart {
         }
         await currentWriter.close();
       }
+
       // todo: error checking
     },
-  });
+  }, undefined, new CountQueuingStrategy({ highWaterMark: 2 }));
 
   return { boundary, stream };
 }

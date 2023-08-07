@@ -168,13 +168,13 @@ export const output: WritablePart[] = [
     name: '',
     body: 'No headers',
     attrs: {},
-    contentDisposition: '',
+    contentDisposition: 'form-data',
   },
   {
     name: '',
     body: '\r\nNo headers space above and below.\r\n',
     attrs: {},
-    contentDisposition: '',
+    contentDisposition: 'form-data',
   },
   {
     name: 'foo-i',
