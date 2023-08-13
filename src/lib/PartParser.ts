@@ -47,7 +47,7 @@ export default class PartParser {
             headers.push(new TextDecoder().decode(new Uint8Array(this.headerBuffer)));
             this.headerBuffer = [];
           } else {
-            const stream = new TransformStream<Uint8Array, any>();
+            const stream = new TransformStream<Uint8Array, Uint8Array>();
             const part: ReadablePart = {
               name: '',
               body: stream.readable,

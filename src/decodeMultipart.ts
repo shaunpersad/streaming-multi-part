@@ -1,5 +1,7 @@
 import PartParser, { OnNewPart } from './lib/PartParser';
 import { ReadablePart } from './lib/parts';
+import { addTransforms } from './lib/streams';
+import searcherStream, { SearcherStreamChunk } from './searcherStream';
 
 export type DecodedMultipart = {
   boundary: string,
@@ -7,16 +9,13 @@ export type DecodedMultipart = {
 };
 
 export default function decodeMultipart(boundary: string): DecodedMultipart {
-  const delimiter = new TextEncoder().encode(`\r\n--${boundary}`);
-  let delimiterIndex = 0;
+  const searcher = searcherStream(`\r\n--${boundary}`);
   let partParser: PartParser | null = null;
   let currentWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
   let writerIsOpen = false;
 
-  const stream = new TransformStream<ArrayBufferView, ReadablePart>({
-    async transform(view, controller) {
-      const chunk = view instanceof Uint8Array ? view : new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
-      let bodyStart: number | null = null;
+  const decoder = new TransformStream<SearcherStreamChunk, ReadablePart>({
+    async transform({ found, data }, controller) {
       const onNewPart: OnNewPart = (part, subStream) => {
         writerIsOpen = true;
         currentWriter = subStream.getWriter();
@@ -28,52 +27,30 @@ export default function decodeMultipart(boundary: string): DecodedMultipart {
         }
         await currentWriter.ready;
         await currentWriter.write(content);
-        bodyStart = null;
       };
-      let byteIndex = 0;
-      while (byteIndex < chunk.length) {
-        const byte = chunk[byteIndex];
 
-        if (delimiter[delimiterIndex] === byte) { // search for the delimiter
-          delimiterIndex++;
-          if (bodyStart !== null) { // we were parsing the body before we started matching the delimiter
-            await write(chunk.subarray(bodyStart, byteIndex));
-          }
-          if (delimiterIndex === delimiter.length) { // we found the whole delimiter
-            await currentWriter?.close();
-            writerIsOpen = false;
-            delimiterIndex = 0;
-            partParser = new PartParser(onNewPart);
-          }
-        } else { // does not match the delimiter
-          if (delimiterIndex) { // if we had a partial match, delimiterIndex will be > 0
-            let bodyFromDelimiterStart: number | null = null;
-            for (let index = 0; index < delimiterIndex; index++) {
-              const isBody = partParser?.parse(delimiter[index]);
-              if (isBody && bodyFromDelimiterStart === null) { // this is the start of the part body that happened to match the delimiter
-                bodyFromDelimiterStart = index;
-              } else if (!isBody && bodyFromDelimiterStart !== null) { // this is the end of the part body that happened to match the delimiter
-                await write(delimiter.subarray(bodyFromDelimiterStart, index));
-                bodyFromDelimiterStart = null;
-              } else if (isBody && bodyFromDelimiterStart !== null && index === delimiterIndex - 1) { // we reached the end of the partial match and we're still processing the body
-                await write(delimiter.subarray(bodyFromDelimiterStart, delimiterIndex));
-              }
-            }
-            delimiterIndex = 0;
-            continue;
-          }
+      if (found) {
+        if (currentWriter) {
+          await currentWriter.ready;
+          await currentWriter.close();
+        }
+        writerIsOpen = false;
+        partParser = new PartParser(onNewPart);
+      } else {
+        let bodyStart: number | null = null;
+        for (let byteIndex = 0; byteIndex < data.length; byteIndex++) {
+          const byte = data[byteIndex];
           const isBody = partParser?.parse(byte);
           if (isBody && bodyStart === null) {
             bodyStart = byteIndex;
           } else if (!isBody && bodyStart !== null) {
-            await write(chunk.subarray(bodyStart, byteIndex));
+            await write(data.subarray(bodyStart, byteIndex));
+            bodyStart = null;
           }
-          delimiterIndex = 0;
         }
-        byteIndex++;
-      }
-      if (bodyStart !== null) {
-        await write(chunk.subarray(bodyStart));
+        if (bodyStart !== null) {
+          await write(data.subarray(bodyStart));
+        }
       }
     },
     async flush() {
@@ -81,12 +58,16 @@ export default function decodeMultipart(boundary: string): DecodedMultipart {
         if (!currentWriter) {
           throw new Error('Expected a writer to close.');
         }
+        await currentWriter.ready;
         await currentWriter.close();
       }
 
       // todo: error checking
     },
-  }, undefined, new CountQueuingStrategy({ highWaterMark: 2 }));
+  });
 
-  return { boundary, stream };
+  return {
+    boundary,
+    stream: addTransforms(searcher, decoder, undefined, new CountQueuingStrategy({ highWaterMark: 2 })),
+  };
 }

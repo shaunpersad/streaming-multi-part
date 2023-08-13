@@ -17,12 +17,17 @@ describe('decodeMultipart', () => {
     const stream = stringToStream(typicalInput).pipeThrough(decode.stream);
     let index = 0;
     for await (const part of stream) {
-      // console.log(part);
+      const body = await streamToString(part.body);
+      console.log({
+        part1: { ...part, body },
+        part2: typicalOutput[index],
+      });
       // console.log({ body: await streamToString(part.body) });
       expect({
         ...part,
-        body: await streamToString(part.body),
+        body,
       }).toEqual(typicalOutput[index++]);
     }
+    expect(index).toEqual(typicalOutput.length);
   });
 });
