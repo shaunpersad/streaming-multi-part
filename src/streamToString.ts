@@ -1,16 +1,11 @@
+/**
+ * Converts a stream of bytes to a string.
+ */
 export default async function streamToString(stream: ReadableStream<ArrayBufferView>): Promise<string> {
-  const decoder = new TextDecoder();
-  let lastChunk: ArrayBufferView | null = null;
+  const readable = stream.pipeThrough(new TextDecoderStream());
   let str = '';
-
-  for await (const chunk of stream) {
-    if (lastChunk) {
-      str += decoder.decode(lastChunk, { stream: true });
-    }
-    lastChunk = chunk;
-  }
-  if (lastChunk) {
-    str += decoder.decode(lastChunk, { stream: false });
+  for await (const chunk of readable) {
+    str += chunk;
   }
   return str;
 }

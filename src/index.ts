@@ -1,7 +1,7 @@
 import appendMultipart, { AppendedMultipart } from './appendMultipart';
 import changeMultipart, { ChangedMultipart } from './changeMultipart';
-import decodeMultipart, { DecodedMultipart } from './decodeMultipart';
-import decodeRequest, { DecodedRequest } from './decodeRequest';
+import decodeMultipart, { DecodeMultipartOptions, DecodedMultipart } from './decodeMultipart';
+import decodeRequest, { DecodeRequestOptions, DecodedRequest } from './decodeRequest';
 import encodeMultipart, { EncodedMultipart } from './encodeMultipart';
 import filterMultipart, { FilteredMultipart } from './filterMultipart';
 import { ReadablePart, WritablePart } from './lib/parts';
@@ -14,7 +14,9 @@ export type {
   AppendedMultipart,
   ChangedMultipart,
   DecodedMultipart,
+  DecodeMultipartOptions,
   DecodedRequest,
+  DecodeRequestOptions,
   EncodedMultipart,
   FilteredMultipart,
   ReadablePart,

@@ -1,52 +1,70 @@
-import { Header, headerToStr, strToHeader } from './headers';
+import stringToStream from '../stringToStream';
 
 export type ReadablePart = {
   name: string,
   body: ReadableStream<Uint8Array>,
-  attrs: Record<string, string>,
-  contentDisposition: string,
-  contentType?: string,
+  attrs: ContentDispositionAttributes,
+  headers: Headers,
 };
 
 export type WritablePart = {
   name: ReadablePart['name'],
   body: ReadablePart['body'] | string,
   attrs?: ReadablePart['attrs'],
-  contentDisposition?: ReadablePart['contentDisposition'],
-  contentType?: ReadablePart['contentType'],
+  headers?: ReadablePart['headers'] | HeadersInit,
 };
 
-export function contentDispositionForPart({ contentDisposition, name, attrs }: WritablePart): Header {
-  const header = contentDisposition ? strToHeader(contentDisposition) : {
-    value: 'form-data',
-    attrs: {},
-  };
-  if (!header.value) {
-    header.value = 'form-data';
-  }
-  header.attrs = Object.entries({ ...attrs, name }).reduce((a, [key, val]) => {
-    if (val) {
-      return { ...a, [key]: val.toString() };
+export type ContentDispositionAttributes = Partial<Record<string, string>>;
+
+export function decodeAttributes(str: string, additional = {}): ContentDispositionAttributes {
+  const params = str.split(';').map((v) => v.trim());
+  const attrs: ContentDispositionAttributes = {};
+  const normalizedAttrs: ContentDispositionAttributes = Object.entries(additional).reduce(
+    (obj, [key, value]) => (value ? { ...obj, [key]: value } : obj),
+    {},
+  );
+  for (const param of params) {
+    const [paramName, paramValue] = param.split('=').map((p) => p.trim());
+    const normalizedKey = paramName.toLowerCase();
+    if (paramValue) {
+      if (!attrs[paramName]) {
+        try {
+          attrs[paramName] = JSON.parse(paramValue).toString();
+        } catch (err) {
+          attrs[paramName] = paramValue;
+        }
+      }
+      normalizedAttrs[normalizedKey] = attrs[paramName];
     }
-    return a;
-  }, {} as Record<string, string>);
-  return header;
+  }
+  return new Proxy(attrs, {
+    get(target, key): any {
+      if (key in target) {
+        return target[key as keyof typeof target];
+      }
+      if (typeof key === 'string') {
+        return normalizedAttrs[key.toLowerCase()];
+      }
+      return undefined;
+    },
+  });
+}
+
+export function encodeAttributes(attrs: ContentDispositionAttributes, ...initial: string[]): string {
+  return Object.entries(attrs).reduce(
+    (pieces, [key, value]) => [...pieces, `${key}=${JSON.stringify(value)}`],
+    initial,
+  ).join('; ');
 }
 
 export function toReadablePart(part: WritablePart): ReadablePart {
-  const contentDisposition = contentDispositionForPart(part);
+  const headers = part.headers instanceof Headers ? part.headers : new Headers(part.headers);
+  const contentDisposition = headers.get('Content-Disposition') || '';
+  const attrs = decodeAttributes(contentDisposition, { ...part.attrs, name: part.name });
+  headers.set('Content-Disposition', encodeAttributes(attrs, 'form-data'));
   let { body } = part;
   if (typeof body === 'string') {
-    const { readable, writable } = new TextEncoderStream();
-    const str = body;
-    body = readable;
-    const writer = writable.getWriter();
-    writer.ready.then(() => writer.write(str)).then(() => writer.close());
+    body = stringToStream(body);
   }
-  return {
-    ...part,
-    body,
-    attrs: contentDisposition.attrs,
-    contentDisposition: headerToStr(contentDisposition),
-  };
+  return { ...part, body, attrs, headers };
 }

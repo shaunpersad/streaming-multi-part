@@ -1,4 +1,4 @@
-import PartParser, { OnNewPart } from './lib/PartParser';
+import PartParser, { OnNewPart, PartParserOptions, PartParserState } from './lib/PartParser';
 import { ReadablePart } from './lib/parts';
 import { addTransforms } from './lib/streams';
 import searcherStream, { SearcherStreamChunk } from './searcherStream';
@@ -8,15 +8,35 @@ export type DecodedMultipart = {
   stream: TransformStream<ArrayBufferView, ReadablePart>,
 };
 
-export default function decodeMultipart(boundary: string): DecodedMultipart {
+export type DecodeMultipartOptions = PartParserOptions & {
+  maxTotalSize?: number,
+  maxNumParts?: number,
+};
+
+export default function decodeMultipart(boundary: string, options?: DecodeMultipartOptions): DecodedMultipart {
+  const {
+    maxPartHeaderSize,
+    maxPartBodySize,
+    maxTotalSize = 1_073_741_824,
+    maxNumParts = Infinity,
+  } = options ?? {};
   const searcher = searcherStream(`\r\n--${boundary}`);
   let partParser: PartParser | null = null;
   let currentWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
   let writerIsOpen = false;
+  let totalSize = 0;
+  let numParts = 0;
 
   const decoder = new TransformStream<SearcherStreamChunk, ReadablePart>({
     async transform({ found, data }, controller) {
+      totalSize += data.length;
+      if (totalSize > maxTotalSize) {
+        throw new Error(`Total size is greater than the specified max size of ${maxTotalSize} bytes.`);
+      }
       const onNewPart: OnNewPart = (part, subStream) => {
+        if (++numParts > maxNumParts) {
+          throw new Error(`Number of parts is greater than the specified max of ${maxNumParts}.`);
+        }
         writerIsOpen = true;
         currentWriter = subStream.getWriter();
         controller.enqueue(part);
@@ -35,7 +55,7 @@ export default function decodeMultipart(boundary: string): DecodedMultipart {
           await currentWriter.close();
         }
         writerIsOpen = false;
-        partParser = new PartParser(onNewPart);
+        partParser = new PartParser(onNewPart, { maxPartHeaderSize, maxPartBodySize });
       } else {
         let bodyStart: number | null = null;
         for (let byteIndex = 0; byteIndex < data.length; byteIndex++) {
@@ -61,8 +81,12 @@ export default function decodeMultipart(boundary: string): DecodedMultipart {
         await currentWriter.ready;
         await currentWriter.close();
       }
-
-      // todo: error checking
+      if (!partParser) {
+        throw new Error('No multipart data found.');
+      }
+      if (partParser.getState() !== PartParserState.MultipartEnd) {
+        throw new Error('Malformed multipart data.');
+      }
     },
   });
 

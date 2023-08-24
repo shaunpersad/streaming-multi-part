@@ -4,25 +4,24 @@ import {
 } from '../src/index';
 import { input as typicalInput, output as typicalOutput } from './fixtures/typical';
 
-const text = `
---MyBoundary
-Content-Disposition: form-data; name="foo"
-
-foo
---MyBoundary
-Content-Disposition: form-data; name="bar"
-
-bar
---MyBoundary
-Content-Disposition: form-data; name="baz"
-
-baz
---MyBoundary--`.replaceAll('\n', '\r\n');
-
 const boundary = 'MyBoundary';
 
 describe('encodeMultipart', () => {
   it('decode encode', async () => {
+    const text = `
+--${boundary}
+Content-Disposition: form-data; name="foo"
+
+foo
+--${boundary}
+Content-Disposition: form-data; name="bar"
+
+bar
+--${boundary}
+Content-Disposition: form-data; name="baz"
+
+baz
+--${boundary}--`.replaceAll('\n', '\r\n');
     let str = '';
 
     await stringToStream(text)
@@ -40,14 +39,15 @@ describe('encodeMultipart', () => {
     const encodedDecodedParts: WritablePart[] = [];
 
     await stringToStream(typicalInput)
-      .pipeThrough(decodeMultipart(boundary, '-- one --').stream)
+      .pipeThrough(decodeMultipart(boundary).stream)
       .pipeThrough(encodeMultipart(boundary).stream)
-      .pipeThrough(decodeMultipart(boundary, '-- two --').stream)
+      .pipeThrough(decodeMultipart(boundary).stream)
       .pipeTo(new WritableStream<ReadablePart>({
-        async write(part) {
+        async write(part: ReadablePart) {
           encodedDecodedParts.push({
             ...part,
-            body: await streamToString(part.body, '-- three --'),
+            body: await streamToString(part.body),
+            headers: Object.fromEntries(part.headers.entries()),
           });
         },
       }));
@@ -69,10 +69,11 @@ describe('encodeMultipart', () => {
       .pipeThrough(encodeMultipart(boundary).stream)
       .pipeThrough(decodeMultipart(boundary).stream)
       .pipeTo(new WritableStream<ReadablePart>({
-        async write(part) {
+        async write(part: ReadablePart) {
           encodedDecodedParts.push({
             ...part,
             body: await streamToString(part.body),
+            headers: Object.fromEntries(part.headers.entries()),
           });
         },
       }));

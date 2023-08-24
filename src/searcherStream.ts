@@ -3,6 +3,11 @@ export type SearcherStreamChunk = {
   found: boolean,
 };
 
+/**
+ * Searches a stream of bytes for a given search value.
+ *
+ * Can search for a string or bytes.
+ */
 export default function searcherStream(searchValue: ArrayBufferView | string) {
   // eslint-disable-next-line no-nested-ternary
   const search = typeof searchValue === 'string'
@@ -44,7 +49,7 @@ export default function searcherStream(searchValue: ArrayBufferView | string) {
       }
 
       if (passthroughIndex !== null) {
-        controller.enqueue({ data: chunk.subarray(passthroughIndex), found: false });
+        controller.enqueue({ data: passthroughIndex === 0 ? chunk : chunk.subarray(passthroughIndex), found: false });
       }
     },
 

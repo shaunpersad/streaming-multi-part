@@ -1,15 +1,15 @@
-import decodeMultipart from './decodeMultipart';
-import { strToHeader } from './lib/headers';
-import { ReadablePart } from './lib/parts';
+import decodeMultipart, { DecodeMultipartOptions } from './decodeMultipart';
+import { ReadablePart, decodeAttributes } from './lib/parts';
 
 export type DecodedRequest = {
   boundary: string,
   stream: ReadableStream<ReadablePart>,
 };
 
-export default function decodeRequest(request: Request): DecodedRequest {
-  const contentType = strToHeader(request.headers.get('content-type') || '');
-  const { boundary } = contentType.attrs;
+export type DecodeRequestOptions = DecodeMultipartOptions;
+
+export default function decodeRequest(request: Request, options?: DecodeRequestOptions): DecodedRequest {
+  const { boundary } = decodeAttributes(request.headers.get('Content-Type') || '');
   if (!boundary) {
     throw new Error('No boundary found in content-type header.');
   }
@@ -18,6 +18,6 @@ export default function decodeRequest(request: Request): DecodedRequest {
   }
   return {
     boundary,
-    stream: request.body.pipeThrough(decodeMultipart(boundary).stream),
+    stream: request.body.pipeThrough(decodeMultipart(boundary, options).stream),
   };
 }

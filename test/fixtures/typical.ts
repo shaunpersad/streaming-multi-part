@@ -85,6 +85,23 @@ Content-Disposition: form-data; name="foo-m"
 --MyBoundar
 --MyBoundar
 --MyBoundar
+--MyBoundary
+Content-Disposition: form-data; name="foo-n"
+
+
+--MyBoundary
+Content-Disposition: form-data; name="foo-o"
+
+
+
+--MyBoundary
+Content-Disposition: form-data; name="foo-p"
+
+
+--MyBoundary  
+Content-Disposition: form-data; name="foo-q"
+
+spaces in the last boundary
 --MyBoundary--
 
 useless trailer
@@ -97,7 +114,9 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-a',
     },
-    contentDisposition: 'form-data; name="foo-a"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-a"',
+    },
   },
   {
     name: 'foo-b',
@@ -105,7 +124,9 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-b',
     },
-    contentDisposition: 'form-data; name="foo-b"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-b"',
+    },
   },
   {
     name: 'foo-c',
@@ -114,7 +135,10 @@ export const output: WritablePart[] = [
       name: 'foo-c',
       filename: 'foo.jpg',
     },
-    contentDisposition: 'form-data; name="foo-c"; filename="foo.jpg"',
+
+    headers: {
+      'content-disposition': 'form-data; name="foo-c"; filename="foo.jpg"',
+    },
   },
   {
     name: 'foo-d',
@@ -123,8 +147,10 @@ export const output: WritablePart[] = [
       name: 'foo-d',
       filename: 'foo.jpg',
     },
-    contentDisposition: 'form-data; name="foo-d"; filename="foo.jpg"',
-    contentType: 'image/jpeg',
+    headers: {
+      'content-disposition': 'form-data; name="foo-d"; filename="foo.jpg"',
+      'content-type': 'image/jpeg',
+    },
   },
   {
     name: 'foo-e',
@@ -133,8 +159,10 @@ export const output: WritablePart[] = [
       name: 'foo-e',
       filename: 'foo.jpg',
     },
-    contentDisposition: 'form-data; name="foo-e"; filename="foo.jpg"',
-    contentType: 'image/jpeg; foo="bar"; bar="baz"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-e"; filename="foo.jpg"',
+      'content-type': 'image/jpeg; foo="bar"; bar="baz"',
+    },
   },
   {
     name: 'foo-f',
@@ -143,8 +171,10 @@ export const output: WritablePart[] = [
       name: 'foo-f',
       filename: 'foo.jpg',
     },
-    contentDisposition: 'form-data; name="foo-f"; filename="foo.jpg"',
-    contentType: 'image/jpeg; foo="bar"; bar="baz"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-f"; filename="foo.jpg"',
+      'content-type': 'image/jpeg; foo="bar"; bar="baz"',
+    },
   },
   {
     name: 'foo-g',
@@ -152,8 +182,11 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-g',
     },
-    contentDisposition: 'form-data; name="foo-g"',
-    contentType: 'text/plain',
+
+    headers: {
+      'content-disposition': 'form-data; name="foo-g"',
+      'content-type': 'text/plain',
+    },
   },
   {
     name: 'foo-h',
@@ -161,20 +194,26 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-h',
     },
-    contentDisposition: 'form-data; name="foo-h"',
-    contentType: 'text/plain',
+    headers: {
+      'content-disposition': 'form-data; name="foo-h"',
+      'content-type': 'text/plain',
+    },
   },
   {
     name: '',
     body: 'No headers',
     attrs: {},
-    contentDisposition: 'form-data',
+    headers: {
+      'content-disposition': 'form-data',
+    },
   },
   {
     name: '',
     body: '\r\nNo headers space above and below.\r\n',
     attrs: {},
-    contentDisposition: 'form-data',
+    headers: {
+      'content-disposition': 'form-data',
+    },
   },
   {
     name: 'foo-i',
@@ -182,8 +221,10 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-i',
     },
-    contentDisposition: 'form-data; name="foo-i"',
-    contentType: 'text/plain',
+    headers: {
+      'content-disposition': 'form-data; name="foo-i"',
+      'content-type': 'text/plain',
+    },
   },
   {
     name: 'foo-j',
@@ -191,7 +232,10 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-j',
     },
-    contentDisposition: 'form-data; name="foo-j"',
+
+    headers: {
+      'content-disposition': 'form-data; name="foo-j"',
+    },
   },
   {
     name: 'foo-k',
@@ -199,7 +243,9 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-k',
     },
-    contentDisposition: 'form-data; name="foo-k"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-k"',
+    },
   },
   {
     name: 'foo-l',
@@ -207,7 +253,9 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-l',
     },
-    contentDisposition: 'form-data; name="foo-l"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-l"',
+    },
   },
   {
     name: 'foo-m',
@@ -215,6 +263,48 @@ export const output: WritablePart[] = [
     attrs: {
       name: 'foo-m',
     },
-    contentDisposition: 'form-data; name="foo-m"',
+    headers: {
+      'content-disposition': 'form-data; name="foo-m"',
+    },
+  },
+  {
+    name: 'foo-n',
+    body: '',
+    attrs: {
+      name: 'foo-n',
+    },
+    headers: {
+      'content-disposition': 'form-data; name="foo-n"',
+    },
+  },
+  {
+    name: 'foo-o',
+    body: '\r\n',
+    attrs: {
+      name: 'foo-o',
+    },
+    headers: {
+      'content-disposition': 'form-data; name="foo-o"',
+    },
+  },
+  {
+    name: 'foo-p',
+    body: '',
+    attrs: {
+      name: 'foo-p',
+    },
+    headers: {
+      'content-disposition': 'form-data; name="foo-p"',
+    },
+  },
+  {
+    name: 'foo-q',
+    body: 'spaces in the last boundary',
+    attrs: {
+      name: 'foo-q',
+    },
+    headers: {
+      'content-disposition': 'form-data; name="foo-q"',
+    },
   },
 ];
