@@ -31,7 +31,7 @@ export function addTransforms<S1Input, S1OutputS2Input, S2Output>(
       iterateReader(s2Reader, (chunk) => {
         controller.enqueue(chunk);
       }).catch((err) => {
-        controller.error((err as Error).message);
+        controller.error(err);
       });
     },
     async transform(chunk) {

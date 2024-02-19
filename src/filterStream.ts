@@ -2,13 +2,8 @@ import { ReadablePart } from './lib/parts';
 
 export type Filter = (part: ReadablePart) => boolean | Promise<boolean>;
 
-export type FilteredMultipart = {
-  filter: Filter,
-  stream: TransformStream<ReadablePart, ReadablePart>,
-};
-
-export default function filterMultipart(filter: Filter): FilteredMultipart {
-  const stream = new TransformStream<ReadablePart, ReadablePart>({
+export default function filterStream(filter: Filter) {
+  return new TransformStream<ReadablePart, ReadablePart>({
     async transform(part, controller) {
       if (await filter(part)) {
         controller.enqueue(part);
@@ -20,6 +15,4 @@ export default function filterMultipart(filter: Filter): FilteredMultipart {
       }
     },
   });
-
-  return { filter, stream };
 }

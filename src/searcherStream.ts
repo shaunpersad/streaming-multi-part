@@ -52,6 +52,5 @@ export default function searcherStream(searchValue: ArrayBufferView | string) {
         controller.enqueue({ data: passthroughIndex === 0 ? chunk : chunk.subarray(passthroughIndex), found: false });
       }
     },
-
-  }, undefined, new CountQueuingStrategy({ highWaterMark: 2 }));
+  });
 }

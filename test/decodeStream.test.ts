@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { decodeMultipart, streamToString, stringToStream } from '../src/index';
+import { decodeStream, streamToString, stringToStream } from '../src/index';
 import { input as typicalInput, output as typicalOutput } from './fixtures/typical';
 
-describe('decodeMultipart', () => {
+describe('decodeStream', () => {
   it('decodes typical multipart data', async () => {
     const boundary = 'MyBoundary';
-    const decode = decodeMultipart(boundary);
-    const stream = stringToStream(typicalInput, 1).pipeThrough(decode.stream);
+    const decode = decodeStream(boundary);
+    const stream = stringToStream(typicalInput, 1).pipeThrough(decode);
     let index = 0;
     for await (const part of stream) {
       const body = await streamToString(part.body);
-      expect({ ...part, body }).toEqual(typicalOutput[index++]);
+      const expectedPart = typicalOutput[index++];
+      expect(part.name).toEqual(expectedPart.name);
+      expect(part.attrs).toEqual(expectedPart.attrs);
+      expect(part.headers).toEqual(expectedPart.headers);
+      expect(body).toEqual(expectedPart.body);
     }
     expect(index).toEqual(typicalOutput.length);
   });
@@ -24,8 +28,8 @@ foo-bar: baz
 
 Oh no, premature EOF!
 `.replaceAll('\n', '\r\n');
-    const decode = decodeMultipart(boundary);
-    const stream = stringToStream(body).pipeThrough(decode.stream);
+    const decode = decodeStream(boundary);
+    const stream = stringToStream(body).pipeThrough(decode);
     try {
       for await (const part of stream) {
         await streamToString(part.body);
@@ -33,6 +37,7 @@ Oh no, premature EOF!
     } catch (err) {
       expect((err as Error).message.toLowerCase()).toContain('malformed');
     }
+    expect.assertions(1);
   });
 
   // it('does headers that span multiple lines', async () => {
@@ -57,11 +62,18 @@ Oh no, premature EOF!
       it(`test cte ${index}`, async () => {
         // From https://golang.org/issue/4411
         const body = `--0016e68ee29c5d515f04cedf6733\r\nContent-Type: text/plain; charset=ISO-8859-1\r\nContent-Disposition: form-data; name=text\r\nContent-Transfer-Encoding: ${cte}\r\n\r\nwords words words words words words words words words words words words wor=\r\nds words words words words words words words words words words words words =\r\nwords words words words words words words words words words words words wor=\r\nds words words words words words words words words words words words words =\r\nwords words words words words words words words words\r\n--0016e68ee29c5d515f04cedf6733\r\nContent-Type: text/plain; charset=ISO-8859-1\r\nContent-Disposition: form-data; name=submit\r\n\r\nSubmit\r\n--0016e68ee29c5d515f04cedf6733--`;
-        const decode = decodeMultipart('0016e68ee29c5d515f04cedf6733');
-        const stream = stringToStream(body).pipeThrough(decode.stream);
+        const decode = decodeStream('0016e68ee29c5d515f04cedf6733');
+        const stream = stringToStream(body).pipeThrough(decode);
         for await (const part of stream) {
           const decodedBody = await streamToString(part.body);
-          console.log(decodedBody);
+          //           expect(decodedBody).toEqual(
+          //             `words words words words words words words words words words words words wor=
+          // ds words words words words words words words words words words words words =
+          // words words words words words words words words words words words words wor=
+          // ds words words words words words words words words words words words words =
+          // words words words words words words words words words
+          // Submit`.replaceAll('\n', '\r\n'),
+          //           );
         }
       });
     });
@@ -82,13 +94,14 @@ Oh no, premature EOF!
         const str = '--BOUNDARY\r\n'
           + 'Content-Disposition: form-data; name="test"\r\n'
           + `\r\n${body}\r\n--BOUNDARY--\r\n`;
-        const decode = decodeMultipart(boundary);
-        const stream = stringToStream(str).pipeThrough(decode.stream);
+        const decode = decodeStream(boundary);
+        const stream = stringToStream(str).pipeThrough(decode);
         for await (const part of stream) {
           const decodedBody = await streamToString(part.body);
           expect(part.name).toEqual('test');
           expect(decodedBody).toEqual(body);
         }
+        expect.assertions(2);
       });
     });
   });

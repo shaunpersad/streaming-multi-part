@@ -17,44 +17,45 @@ export type WritablePart = {
 export type ContentDispositionAttributes = Partial<Record<string, string>>;
 
 export function decodeAttributes(str: string, additional = {}): ContentDispositionAttributes {
-  const params = str.split(';').map((v) => v.trim());
-  const attrs: ContentDispositionAttributes = {};
+  const params = str.split(';').map((p) => p.trim()).filter((p) => p);
   const normalizedAttrs: ContentDispositionAttributes = Object.entries(additional).reduce(
-    (obj, [key, value]) => (value ? { ...obj, [key]: value } : obj),
+    (obj, [key, value]) => (value !== '' ? { ...obj, [key.toLowerCase()]: value } : obj),
     {},
   );
   for (const param of params) {
     const [paramName, paramValue] = param.split('=').map((p) => p.trim());
     const normalizedKey = paramName.toLowerCase();
     if (paramValue) {
-      if (!attrs[paramName]) {
+      if (!normalizedAttrs[normalizedKey]) {
         try {
-          attrs[paramName] = JSON.parse(paramValue).toString();
+          normalizedAttrs[normalizedKey] = JSON.parse(paramValue).toString();
         } catch (err) {
-          attrs[paramName] = paramValue;
+          normalizedAttrs[normalizedKey] = paramValue;
         }
       }
-      normalizedAttrs[normalizedKey] = attrs[paramName];
     }
   }
-  return new Proxy(attrs, {
+  return new Proxy(normalizedAttrs, {
     get(target, key): any {
-      if (key in target) {
-        return target[key as keyof typeof target];
-      }
       if (typeof key === 'string') {
         return normalizedAttrs[key.toLowerCase()];
       }
       return undefined;
     },
+    ownKeys(): ArrayLike<string | symbol> {
+      return Object.keys(normalizedAttrs);
+    },
+    has(target: ContentDispositionAttributes, key: string | symbol): boolean {
+      return typeof key === 'string' && key.toLowerCase() in normalizedAttrs;
+    },
   });
 }
 
-export function encodeAttributes(attrs: ContentDispositionAttributes, ...initial: string[]): string {
+export function encodeAttributes(attrs: ContentDispositionAttributes, ...additional: string[]): string {
   return Object.entries(attrs).reduce(
-    (pieces, [key, value]) => [...pieces, `${key}=${JSON.stringify(value)}`],
-    initial,
-  ).join('; ');
+    (pieces, [key, value]) => [...pieces, value === '' ? '' : `${key}=${JSON.stringify(value)}`],
+    additional,
+  ).filter((p) => !!p.trim()).join('; ');
 }
 
 export function toReadablePart(part: WritablePart): ReadablePart {
@@ -67,4 +68,20 @@ export function toReadablePart(part: WritablePart): ReadablePart {
     body = stringToStream(body);
   }
   return { ...part, body, attrs, headers };
+}
+
+export function isPart(part: any): part is (ReadablePart | WritablePart) {
+  if (!('name' in part) || typeof part.name !== 'string') {
+    return false;
+  }
+  if (!('body' in part) || !(typeof part.body === 'string' || part.body instanceof ReadableStream)) {
+    return false;
+  }
+  if ('attrs' in part && typeof part.attrs !== 'object') {
+    return false;
+  }
+  if ('headers' in part && !(typeof part.headers === 'object' || part.headers instanceof Headers)) {
+    return false;
+  }
+  return true;
 }

@@ -4,6 +4,7 @@
     "src/**/*.ts",
     "test",
   ],
+  "exclude": ["vitest.config.ts"],
   "compilerOptions": {
     "rootDir": "./"
   }

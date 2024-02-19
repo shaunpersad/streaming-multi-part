@@ -15,7 +15,7 @@ function stringToChunks(str: string, chunkSize: number) {
 /**
  * Converts a string to a stream of bytes.
  */
-export default function stringToStream(str: string, chunkSize = str.length): ReadableStream<Uint8Array> {
+export default function stringToStream(str: string, chunkSize = str.length) {
   const { writable, readable } = new TextEncoderStream();
   const writer = writable.getWriter();
   const chunks = chunkSize === str.length ? [str] : stringToChunks(str, chunkSize);

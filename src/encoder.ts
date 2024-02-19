@@ -7,7 +7,7 @@ export type EncodedMultipart = {
   stream: TransformStream<WritablePart, Uint8Array>,
 };
 
-export default function encodeMultipart(boundary = randomString()): EncodedMultipart {
+export default function encoder(boundary = randomString()): EncodedMultipart {
   const delimiter = new TextEncoder().encode(`\r\n--${boundary}`);
   const stream = new TransformStream<WritablePart, Uint8Array>({
     async transform(readableOrWritablePart, controller) {

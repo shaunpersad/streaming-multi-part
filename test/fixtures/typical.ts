@@ -135,7 +135,6 @@ export const output: WritablePart[] = [
       name: 'foo-c',
       filename: 'foo.jpg',
     },
-
     headers: {
       'content-disposition': 'form-data; name="foo-c"; filename="foo.jpg"',
     },
@@ -203,17 +202,13 @@ export const output: WritablePart[] = [
     name: '',
     body: 'No headers',
     attrs: {},
-    headers: {
-      'content-disposition': 'form-data',
-    },
+    headers: {},
   },
   {
     name: '',
     body: '\r\nNo headers space above and below.\r\n',
     attrs: {},
-    headers: {
-      'content-disposition': 'form-data',
-    },
+    headers: {},
   },
   {
     name: 'foo-i',

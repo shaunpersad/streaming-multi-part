@@ -151,6 +151,7 @@ export default {
     });
     const encode = encodeMultipart(); // covert parts into a data stream
     const response = await fetch('https://example.com/images/cat.jpg', {
+      method: 'post',
       headers: {
         'content-type': encode.contentType,
       },

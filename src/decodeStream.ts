@@ -1,19 +1,15 @@
 import PartParser, { OnNewPart, PartParserOptions, PartParserState } from './lib/PartParser';
 import { ReadablePart } from './lib/parts';
 import { addTransforms } from './lib/streams';
+import prependStream from './prependStream';
 import searcherStream, { SearcherStreamChunk } from './searcherStream';
 
-export type DecodedMultipart = {
-  boundary: string,
-  stream: TransformStream<ArrayBufferView, ReadablePart>,
-};
-
-export type DecodeMultipartOptions = PartParserOptions & {
+export type DecodeStreamOptions = PartParserOptions & {
   maxTotalSize?: number,
   maxNumParts?: number,
 };
 
-export default function decodeMultipart(boundary: string, options?: DecodeMultipartOptions): DecodedMultipart {
+export default function decodeStream(boundary: string, options?: DecodeStreamOptions) {
   const {
     maxPartHeaderSize,
     maxPartBodySize,
@@ -90,8 +86,10 @@ export default function decodeMultipart(boundary: string, options?: DecodeMultip
     },
   });
 
-  return {
-    boundary,
-    stream: addTransforms(searcher, decoder, undefined, new CountQueuingStrategy({ highWaterMark: 2 })),
-  };
+  return addTransforms(
+    prependStream('\r\n'),
+    addTransforms(searcher, decoder),
+    undefined,
+    new CountQueuingStrategy({ highWaterMark: 2 }),
+  );
 }

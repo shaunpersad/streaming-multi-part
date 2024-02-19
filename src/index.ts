@@ -1,36 +1,36 @@
-import appendMultipart, { AppendedMultipart } from './appendMultipart';
-import changeMultipart, { ChangedMultipart } from './changeMultipart';
-import decodeMultipart, { DecodeMultipartOptions, DecodedMultipart } from './decodeMultipart';
-import decodeRequest, { DecodeRequestOptions, DecodedRequest } from './decodeRequest';
-import encodeMultipart, { EncodedMultipart } from './encodeMultipart';
-import filterMultipart, { FilteredMultipart } from './filterMultipart';
+import appendStream, { Appender, ToAppend } from './appendStream';
+import decodeStream, { DecodeStreamOptions } from './decodeStream';
+import decoder, { DecodedMultipart, DecoderOptions } from './decoder';
+import encoder, { EncodedMultipart } from './encoder';
+import filterStream, { Filter } from './filterStream';
 import { ReadablePart, WritablePart } from './lib/parts';
+import mapperStream, { Mapper } from './mapperStream';
 import replacerStream from './replacerStream';
 import searcherStream, { SearcherStreamChunk } from './searcherStream';
 import streamToString from './streamToString';
 import stringToStream from './stringToStream';
 
 export type {
-  AppendedMultipart,
-  ChangedMultipart,
+  Appender,
+  ToAppend,
+  DecodeStreamOptions,
   DecodedMultipart,
-  DecodeMultipartOptions,
-  DecodedRequest,
-  DecodeRequestOptions,
+  DecoderOptions,
   EncodedMultipart,
-  FilteredMultipart,
+  Filter,
+  Mapper,
   ReadablePart,
   SearcherStreamChunk,
   WritablePart,
 };
 
 export {
-  appendMultipart,
-  changeMultipart,
-  decodeMultipart,
-  decodeRequest,
-  encodeMultipart,
-  filterMultipart,
+  decoder,
+  encoder,
+  appendStream,
+  mapperStream,
+  decodeStream,
+  filterStream,
   replacerStream,
   searcherStream,
   streamToString,
